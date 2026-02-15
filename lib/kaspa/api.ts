@@ -93,6 +93,37 @@ export async function getKaspaPrice(): Promise<{ price: number }> {
     return apiRequest<{ price: number }>('/info/price');
 }
 
+// verify if a tx actually landed on-chain
+// returns status + block time so we can show confirmation in the ui
+export interface TxVerification {
+    verified: boolean;
+    isAccepted: boolean;
+    blockTime: number | null;
+    blockHash: string | null;
+    error?: string;
+}
+
+export async function verifyTransaction(txId: string, network?: string): Promise<TxVerification> {
+    try {
+        const tx = await getTransactionById(txId, network);
+        return {
+            verified: true,
+            isAccepted: tx.is_accepted,
+            blockTime: tx.block_time || null,
+            blockHash: tx.block_hash?.[0] || null,
+        };
+    } catch (err) {
+        // tx not found yet = still propagating
+        return {
+            verified: false,
+            isAccepted: false,
+            blockTime: null,
+            blockHash: null,
+            error: err instanceof Error ? err.message : 'verification failed',
+        };
+    }
+}
+
 // Explorer links
 export function getExplorerTxUrl(txId: string, network: string = 'testnet-10'): string {
     if (network.includes('mainnet')) {

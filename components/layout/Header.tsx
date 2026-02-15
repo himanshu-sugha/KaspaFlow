@@ -33,6 +33,21 @@ export default function Header() {
                             </Link>
                         </li>
                         <li>
+                            <Link href="/pay/create" className={pathname.startsWith('/pay') ? 'active' : ''}>
+                                Pay
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/analytics" className={pathname === '/analytics' ? 'active' : ''}>
+                                Analytics
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/payroll" className={pathname === '/payroll' ? 'active' : ''}>
+                                Payroll
+                            </Link>
+                        </li>
+                        <li>
                             <Link href="/history" className={pathname === '/history' ? 'active' : ''}>
                                 History
                             </Link>

@@ -7,6 +7,10 @@ export interface StreamTransaction {
     amount: number; // sompi
     timestamp: number;
     status: 'confirmed' | 'pending' | 'failed';
+    // on-chain verification
+    onChainStatus?: 'unverified' | 'verifying' | 'accepted' | 'not_found';
+    blockTime?: number | null;
+    explorerUrl?: string;
 }
 
 export interface PaymentStream {

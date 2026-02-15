@@ -60,7 +60,34 @@ export async function sendKas(
 ): Promise<string> {
     if (!isKaswareInstalled()) throw new Error('Kasware not installed');
     const options = priorityFee ? { priorityFee } : undefined;
-    return window.kasware!.sendKaspa(toAddress, sompiAmount, options);
+    const result = await window.kasware!.sendKaspa(toAddress, sompiAmount, options);
+
+    // kasware sometimes returns a json object instead of a plain txid string
+    // normalize it so we always get a clean hex string
+    if (typeof result === 'object' && result !== null) {
+        // could be {id: "..."} or {txId: "..."} or similar
+        const obj = result as Record<string, unknown>;
+        const txId = obj.id || obj.txId || obj.txid || obj.transaction_id;
+        if (typeof txId === 'string') return txId;
+        // last resort: stringify and try to extract hex hash
+        const str = JSON.stringify(result);
+        const match = str.match(/[a-f0-9]{64}/i);
+        if (match) return match[0];
+        return str; // fallback
+    }
+
+    // if its already a string, check if its json-encoded
+    if (typeof result === 'string' && result.startsWith('{')) {
+        try {
+            const parsed = JSON.parse(result);
+            const txId = parsed.id || parsed.txId || parsed.txid || parsed.transaction_id;
+            if (typeof txId === 'string') return txId;
+        } catch {
+            // not json, use as-is
+        }
+    }
+
+    return result;
 }
 
 export function onAccountsChanged(callback: (accounts: string[]) => void): void {

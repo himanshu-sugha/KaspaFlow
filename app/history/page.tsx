@@ -6,6 +6,53 @@ import { useWallet } from '@/contexts/WalletContext';
 import { formatKas, truncateAddress, formatDuration, formatDate, sompiToKas } from '@/lib/utils';
 import { getExplorerTxUrl } from '@/lib/kaspa/api';
 
+// export all stream + tx data as CSV for accounting
+function exportToCsv(streams: any[], network: string) {
+    const rows: string[][] = [
+        ['Stream ID', 'Status', 'Recipient', 'Amount Sent (KAS)', 'Total Amount (KAS)', 'Duration', 'Tx Count', 'Created', 'Tx ID', 'Tx Amount (KAS)', 'Tx Time', 'On-Chain Status', 'Explorer URL'],
+    ];
+
+    streams.forEach(stream => {
+        if (stream.txHistory.length === 0) {
+            rows.push([
+                stream.id, stream.status, stream.recipient,
+                sompiToKas(stream.amountSent).toFixed(8),
+                sompiToKas(stream.totalAmount).toFixed(8),
+                formatDuration(stream.duration),
+                '0', new Date(stream.createdAt).toISOString(),
+                '', '', '', '', '',
+            ]);
+        } else {
+            stream.txHistory.forEach((tx: any, i: number) => {
+                rows.push([
+                    i === 0 ? stream.id : '',
+                    i === 0 ? stream.status : '',
+                    i === 0 ? stream.recipient : '',
+                    i === 0 ? sompiToKas(stream.amountSent).toFixed(8) : '',
+                    i === 0 ? sompiToKas(stream.totalAmount).toFixed(8) : '',
+                    i === 0 ? formatDuration(stream.duration) : '',
+                    i === 0 ? stream.txHistory.length.toString() : '',
+                    i === 0 ? new Date(stream.createdAt).toISOString() : '',
+                    tx.txId,
+                    sompiToKas(tx.amount).toFixed(8),
+                    new Date(tx.timestamp).toISOString(),
+                    tx.onChainStatus || 'unknown',
+                    tx.explorerUrl || getExplorerTxUrl(tx.txId, network),
+                ]);
+            });
+        }
+    });
+
+    const csv = rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `kaspaflow_history_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
 export default function HistoryPage() {
     const { streams, completedStreams, stats } = useStreams();
     const { isConnected, network, demoMode } = useWallet();
@@ -27,13 +74,24 @@ export default function HistoryPage() {
     return (
         <div className="container" style={{ paddingTop: 'var(--space-xl)', paddingBottom: 'var(--space-4xl)' }}>
             {/* Page Header */}
-            <div style={{ marginBottom: 'var(--space-xl)' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 'var(--space-sm)' }}>
-                    📊 Stream History
-                </h1>
-                <p style={{ color: 'var(--text-secondary)' }}>
-                    View your completed and cancelled payment streams
-                </p>
+            <div style={{ marginBottom: 'var(--space-xl)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-md)' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 'var(--space-sm)' }}>
+                        📊 Stream History
+                    </h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>
+                        View your completed and cancelled payment streams
+                    </p>
+                </div>
+                {streams.length > 0 && (
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => exportToCsv(streams, network)}
+                        title="Download all stream and transaction data as CSV"
+                    >
+                        📥 Export CSV
+                    </button>
+                )}
             </div>
 
             {/* Summary Stats */}

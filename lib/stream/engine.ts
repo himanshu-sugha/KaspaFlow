@@ -7,6 +7,7 @@
 import { PaymentStream, StreamCreateConfig, StreamTransaction, StreamStatus } from './types';
 import { generateId, kasToSompi, calculateFlowRate, SOMPI_PER_KAS } from '../utils';
 import { sendKas } from '../kaspa/wallet';
+import { verifyTransaction, getExplorerTxUrl } from '../kaspa/api';
 
 const STREAM_COLORS = ['#49eacb', '#6c5ce7', '#fd79a8', '#00cec9', '#e17055', '#74b9ff', '#a29bfe', '#55efc4'];
 let colorIndex = 0;
@@ -100,7 +101,9 @@ export async function startStream(
                 txId,
                 amount: tickAmount,
                 timestamp: Date.now(),
-                status: 'confirmed',
+                status: demoMode ? 'confirmed' : 'pending',
+                onChainStatus: demoMode ? 'accepted' : 'unverified',
+                explorerUrl: demoMode ? undefined : getExplorerTxUrl(txId),
             };
 
             const newAmountSent = stream.amountSent + tickAmount;
@@ -112,12 +115,36 @@ export async function startStream(
                 ...(isComplete ? { status: 'completed', completedAt: Date.now() } : {}),
             });
 
-            // Update local reference
+            // update local ref
             stream.amountSent = newAmountSent;
             stream.txHistory = [...stream.txHistory, tx];
 
             if (isComplete) {
                 stopInterval(stream.id);
+            }
+
+            // background verification - check on-chain after a short delay
+            // dont block the main flow, just update status when confirmed
+            if (!demoMode) {
+                setTimeout(async () => {
+                    try {
+                        const result = await verifyTransaction(txId);
+                        const updatedHistory = stream.txHistory.map(t =>
+                            t.txId === txId
+                                ? {
+                                    ...t,
+                                    status: result.isAccepted ? 'confirmed' as const : 'pending' as const,
+                                    onChainStatus: result.isAccepted ? 'accepted' as const : 'not_found' as const,
+                                    blockTime: result.blockTime,
+                                }
+                                : t
+                        );
+                        stream.txHistory = updatedHistory;
+                        onUpdate(stream.id, { txHistory: updatedHistory });
+                    } catch {
+                        // verification failed, leave as unverified
+                    }
+                }, 2000); // wait 2s for tx to propagate
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Transaction failed';

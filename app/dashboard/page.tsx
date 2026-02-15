@@ -3,6 +3,7 @@
 import React from 'react';
 import { useWallet } from '@/contexts/WalletContext';
 import { useStreams } from '@/contexts/StreamContext';
+import AIStreamCreator from '@/components/stream/AIStreamCreator';
 import StreamCreator from '@/components/stream/StreamCreator';
 import StreamCard from '@/components/stream/StreamCard';
 import ParticleFlow from '@/components/dashboard/ParticleFlow';
@@ -52,7 +53,22 @@ export default function DashboardPage() {
             {/* Main Dashboard Grid */}
             <div className="dashboard">
                 <div className="dashboard-main">
-                    {/* Stream Creator */}
+                    {/* AI-Powered Quick Create */}
+                    <AIStreamCreator />
+
+                    {/* Divider */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 'var(--space-md)',
+                        margin: 'var(--space-xs) 0',
+                    }}>
+                        <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            or use manual form
+                        </span>
+                        <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                    </div>
+
+                    {/* Manual Stream Creator */}
                     <StreamCreator />
 
                     {/* Active Streams */}
