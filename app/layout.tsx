@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { WalletProvider } from "@/contexts/WalletContext";
 import { StreamProvider } from "@/contexts/StreamContext";
+import { ToastProvider } from "@/components/ui/Toast";
 import Header from "@/components/layout/Header";
 
 export const metadata: Metadata = {
@@ -25,10 +26,12 @@ export default function RootLayout({
       <body>
         <WalletProvider>
           <StreamProvider>
-            <Header />
-            <main className="page">
-              {children}
-            </main>
+            <ToastProvider>
+              <Header />
+              <main className="page">
+                {children}
+              </main>
+            </ToastProvider>
           </StreamProvider>
         </WalletProvider>
       </body>
