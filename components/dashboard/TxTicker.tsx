@@ -56,15 +56,16 @@ function VerificationBadge({ status }: { status?: string }) {
     }
     if (status === 'not_found') {
         return (
-            <span title="Not found on-chain yet" style={{
+            <span title="Verifying on-chain — this may take a few seconds" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
-                fontSize: '0.65rem', color: '#e17055', fontWeight: 600,
+                fontSize: '0.65rem', color: '#fdcb6e', fontWeight: 600,
             }}>
                 <span style={{
                     width: 6, height: 6, borderRadius: '50%',
-                    background: '#e17055', display: 'inline-block',
+                    background: '#fdcb6e', display: 'inline-block',
+                    animation: 'pulse 1.5s infinite',
                 }} />
-                RETRY
+                VERIFYING
             </span>
         );
     }

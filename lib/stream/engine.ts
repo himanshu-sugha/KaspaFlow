@@ -123,28 +123,43 @@ export async function startStream(
                 stopInterval(stream.id);
             }
 
-            // background verification - check on-chain after a short delay
-            // dont block the main flow, just update status when confirmed
+            // background verification - retry with increasing delays
+            // testnet APIs can be slow to index, so we try multiple times
             if (!demoMode) {
-                setTimeout(async () => {
-                    try {
-                        const result = await verifyTransaction(txId);
-                        const updatedHistory = stream.txHistory.map(t =>
-                            t.txId === txId
-                                ? {
-                                    ...t,
-                                    status: result.isAccepted ? 'confirmed' as const : 'pending' as const,
-                                    onChainStatus: result.isAccepted ? 'accepted' as const : 'not_found' as const,
-                                    blockTime: result.blockTime,
-                                }
-                                : t
-                        );
-                        stream.txHistory = updatedHistory;
-                        onUpdate(stream.id, { txHistory: updatedHistory });
-                    } catch {
-                        // verification failed, leave as unverified
+                const verifyWithRetry = async (attempts: number, delay: number) => {
+                    for (let i = 0; i < attempts; i++) {
+                        await new Promise(r => setTimeout(r, delay * (i + 1)));
+                        try {
+                            const result = await verifyTransaction(txId);
+                            if (result.isAccepted) {
+                                const updatedHistory = stream.txHistory.map(t =>
+                                    t.txId === txId
+                                        ? {
+                                            ...t,
+                                            status: 'confirmed' as const,
+                                            onChainStatus: 'accepted' as const,
+                                            blockTime: result.blockTime,
+                                        }
+                                        : t
+                                );
+                                stream.txHistory = updatedHistory;
+                                onUpdate(stream.id, { txHistory: updatedHistory });
+                                return; // verified, stop retrying
+                            }
+                        } catch {
+                            // api error, will retry
+                        }
                     }
-                }, 2000); // wait 2s for tx to propagate
+                    // all retries exhausted — mark as unverified (not "not_found")
+                    const updatedHistory = stream.txHistory.map(t =>
+                        t.txId === txId
+                            ? { ...t, onChainStatus: 'unverified' as const }
+                            : t
+                    );
+                    stream.txHistory = updatedHistory;
+                    onUpdate(stream.id, { txHistory: updatedHistory });
+                };
+                verifyWithRetry(3, 5000); // 3 attempts at 5s, 10s, 15s
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
