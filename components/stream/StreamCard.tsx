@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { PaymentStream } from '@/lib/stream/types';
 import { useStreams } from '@/contexts/StreamContext';
+import { useToast } from '@/contexts/ToastContext';
 import { formatKas, truncateAddress, formatTimeRemaining, sompiToKas } from '@/lib/utils';
+import { useKasPrice } from '@/lib/kaspa/price';
 
 interface StreamCardProps {
     stream: PaymentStream;
@@ -12,12 +14,15 @@ interface StreamCardProps {
 export default function StreamCard({ stream }: StreamCardProps) {
     const { startStreamById, pauseStreamById, cancelStreamById, removeStreamById } = useStreams();
     const [elapsed, setElapsed] = useState(0);
+    const kasPrice = useKasPrice();
+    const { showToast } = useToast();
 
     const progress = stream.totalAmount > 0
         ? Math.min((stream.amountSent / stream.totalAmount) * 100, 100)
         : 0;
 
     const timeRemaining = stream.duration - elapsed;
+    const totalUsd = sompiToKas(stream.totalAmount) * kasPrice;
 
     // Update elapsed time counter
     useEffect(() => {
@@ -63,6 +68,11 @@ export default function StreamCard({ stream }: StreamCardProps) {
                     <div className="stream-total">
                         / {formatKas(stream.totalAmount, 4)} KAS
                     </div>
+                    {kasPrice > 0 && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
+                            ≈ ${totalUsd.toFixed(2)}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -99,7 +109,10 @@ export default function StreamCard({ stream }: StreamCardProps) {
                     {(stream.status === 'pending' || stream.status === 'paused' || stream.status === 'error') && (
                         <button
                             className="btn btn-primary btn-sm"
-                            onClick={() => startStreamById(stream.id)}
+                            onClick={() => {
+                                startStreamById(stream.id);
+                                showToast(stream.status === 'paused' ? 'Resuming stream...' : 'Starting stream...', 'info');
+                            }}
                         >
                             {stream.status === 'pending' ? '▶ Start' : '▶ Resume'}
                         </button>
@@ -107,7 +120,10 @@ export default function StreamCard({ stream }: StreamCardProps) {
                     {stream.status === 'active' && (
                         <button
                             className="btn btn-secondary btn-sm"
-                            onClick={() => pauseStreamById(stream.id)}
+                            onClick={() => {
+                                pauseStreamById(stream.id);
+                                showToast('Stream paused', 'info');
+                            }}
                         >
                             ⏸ Pause
                         </button>
@@ -115,7 +131,10 @@ export default function StreamCard({ stream }: StreamCardProps) {
                     {(stream.status === 'active' || stream.status === 'paused' || stream.status === 'error') && (
                         <button
                             className="btn btn-danger btn-sm"
-                            onClick={() => cancelStreamById(stream.id)}
+                            onClick={() => {
+                                cancelStreamById(stream.id);
+                                showToast('Stream stopped', 'info');
+                            }}
                         >
                             ✕ Cancel
                         </button>
@@ -123,7 +142,10 @@ export default function StreamCard({ stream }: StreamCardProps) {
                     {(stream.status === 'completed' || stream.status === 'cancelled') && (
                         <button
                             className="btn btn-secondary btn-sm"
-                            onClick={() => removeStreamById(stream.id)}
+                            onClick={() => {
+                                removeStreamById(stream.id);
+                                showToast('Stream removed', 'info');
+                            }}
                         >
                             🗑 Remove
                         </button>

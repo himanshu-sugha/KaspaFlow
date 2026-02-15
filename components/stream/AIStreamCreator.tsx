@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@/contexts/WalletContext';
 import { useStreams } from '@/contexts/StreamContext';
+import { useToast } from '@/contexts/ToastContext';
 import { parseStreamCommand, EXAMPLE_PROMPTS, ParsedStreamCommand } from '@/lib/stream/nlp';
 import { formatKas } from '@/lib/utils';
 
@@ -24,6 +25,8 @@ export default function AIStreamCreator() {
     const [parsed, setParsed] = useState<ParsedStreamCommand | null>(null);
     const [placeholderIdx, setPlaceholderIdx] = useState(0);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    const { showToast } = useToast();
 
     // cycle placeholder examples
     useEffect(() => {
@@ -54,8 +57,9 @@ export default function AIStreamCreator() {
         setInput('');
         setParsed(null);
         setShowSuccess(true);
+        showToast('Stream started successfully! Money is flowing.', 'success');
         setTimeout(() => setShowSuccess(false), 3000);
-    }, [parsed, createNewStream]);
+    }, [parsed, createNewStream, showToast]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && parsed?.isValid) {
@@ -230,6 +234,50 @@ export default function AIStreamCreator() {
             {!input && !showSuccess && (
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Type a command like <strong>&quot;stream 50 KAS to kaspatest:... over 10 minutes&quot;</strong> and press Enter
+                </div>
+            )}
+
+            {/* Quick Templates */}
+            {!input && !showSuccess && (
+                <div style={{ marginTop: 'var(--space-md)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Quick Start
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+                        {[
+                            { icon: '💰', label: 'Payroll', text: 'Send 500 KAS to kaspatest:qz0s... over 24 hours', color: '#49eacb' },
+                            { icon: '🔄', label: 'Subscription', text: 'Stream 10 KAS every 30 seconds for 1 hour', color: '#6c5ce7' },
+                            { icon: '❤️', label: 'Tip Jar', text: 'Send 5 KAS to kaspatest:qz0s... over 5 minutes', color: '#fd79a8' }
+                        ].map((t) => (
+                            <button
+                                key={t.label}
+                                onClick={() => setInput(t.text)}
+                                className="btn"
+                                style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    padding: '6px 12px',
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = t.color;
+                                    e.currentTarget.style.background = `${t.color}15`;
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                }}
+                            >
+                                <span>{t.icon}</span>
+                                <span style={{ fontWeight: 500 }}>{t.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

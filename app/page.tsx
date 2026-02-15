@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useWallet } from '@/contexts/WalletContext';
+import LandingStats from '@/components/landing/LandingStats';
 
 export default function HomePage() {
   const { isConnected, connect, enableDemoMode, isInstalled } = useWallet();
@@ -52,18 +53,7 @@ export default function HomePage() {
         </div>
 
         <div className="hero-stats">
-          <div>
-            <div className="stat-value stat-highlight">10 BPS</div>
-            <div className="stat-label">Blocks Per Second</div>
-          </div>
-          <div>
-            <div className="stat-value stat-highlight">&lt;1s</div>
-            <div className="stat-label">Confirmation Time</div>
-          </div>
-          <div>
-            <div className="stat-value stat-highlight">∞</div>
-            <div className="stat-label">Stream Possibilities</div>
-          </div>
+          <LandingStats />
         </div>
       </section>
 
@@ -98,6 +88,42 @@ export default function HomePage() {
               view transaction history, and export data — you&apos;re always in control.
             </p>
           </div>
+        </div>
+
+        {/* Comparison Table */}
+        <div className="card" style={{ marginTop: 'var(--space-3xl)', padding: 'var(--space-xl)', overflowX: 'auto' }}>
+          <h3 style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>The Future of Payments</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <th style={{ textAlign: 'left', padding: '16px', color: 'var(--text-muted)' }}>Feature</th>
+                <th style={{ textAlign: 'left', padding: '16px', color: '#ff6b6b' }}>Traditional Payroll</th>
+                <th style={{ textAlign: 'left', padding: '16px', color: '#49eacb', fontSize: '1.2rem' }}>StreamKAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <td style={{ padding: '16px', fontWeight: 600 }}>Frequency</td>
+                <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>Monthly / Bi-weekly</td>
+                <td style={{ padding: '16px', color: '#49eacb', fontWeight: 600 }}>Every Second</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <td style={{ padding: '16px', fontWeight: 600 }}>Transaction Fee</td>
+                <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>High (Bank Wires)</td>
+                <td style={{ padding: '16px', color: '#49eacb', fontWeight: 600 }}>&lt; 0.0001 KAS</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <td style={{ padding: '16px', fontWeight: 600 }}>Settlement</td>
+                <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>1-3 Business Days</td>
+                <td style={{ padding: '16px', color: '#49eacb', fontWeight: 600 }}>Instant (1s)</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '16px', fontWeight: 600 }}>Transparency</td>
+                <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>Opaque / Trust-based</td>
+                <td style={{ padding: '16px', color: '#49eacb', fontWeight: 600 }}>100% On-Chain</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

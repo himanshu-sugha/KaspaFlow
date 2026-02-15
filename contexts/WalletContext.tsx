@@ -106,7 +106,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
         const handleBalanceChanged = (balance: { confirmed: number; unconfirmed: number; total: number }) => {
             if (!mountedRef.current) return;
-            setState(prev => ({ ...prev, balance }));
+            setState(prev => ({
+                ...prev, balance: {
+                    confirmed: Number(balance?.confirmed) || 0,
+                    unconfirmed: Number(balance?.unconfirmed) || 0,
+                    total: Number(balance?.total) || 0,
+                }
+            }));
         };
 
         onAccountsChanged(handleAccountsChanged);

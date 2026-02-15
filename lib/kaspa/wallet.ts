@@ -45,7 +45,13 @@ export async function getAccounts(): Promise<string[]> {
 
 export async function getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: number }> {
     if (!isKaswareInstalled()) throw new Error('Kasware not installed');
-    return window.kasware!.getBalance();
+    const bal = await window.kasware!.getBalance();
+    // Normalize: KasWare may return undefined/NaN for empty wallets
+    return {
+        confirmed: Number(bal?.confirmed) || 0,
+        unconfirmed: Number(bal?.unconfirmed) || 0,
+        total: Number(bal?.total) || 0,
+    };
 }
 
 export async function getNetwork(): Promise<string> {

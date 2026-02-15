@@ -3,197 +3,190 @@
 > **Money that flows like water.**
 > Real-time streaming payments powered by Kaspa's 10 BPS BlockDAG.
 
+Built for [Kaspathon 2026](https://kaspathon.com) | Track: **Payments & Commerce**
+
 ---
 
 ## What is StreamKAS?
 
-StreamKAS is a **real-time payment streaming platform** that:
+StreamKAS is a **real-time payment streaming platform** built on Kaspa. It replaces traditional lump-sum transfers with continuous, per-second money flows — unlocking use cases that existing payment infrastructure cannot support.
 
-1. **Streams KAS by the second** - continuous micro-transactions, not lump sums
-2. **AI-powered stream creation** - type natural language commands to create streams
-3. **Verifies on-chain** - every micro-tx confirmed against the Kaspa blockchain
-4. **Supports payroll** - stream to multiple recipients simultaneously
-5. **Generates payment links** - shareable URLs for receiving streaming payments
+### Real-World Use Cases
+
+| Use Case | Problem Today | How StreamKAS Fixes It |
+|---|---|---|
+| **Freelancer Payments** | Invoice → wait 30 days → lump sum | Earn KAS every second while working |
+| **Employee Payroll** | Biweekly/monthly paycheck | Salary streams continuously |
+| **Subscriptions** | Full month charged upfront | Pay-per-second; cancel anytime |
+
+### Why This Needs Kaspa
+
+Per-second streaming requires a blockchain that can actually confirm transactions every second. Most chains can't:
+
+| | Kaspa | Bitcoin | Ethereum |
+|---|---|---|---|
+| Block time | **1 second** | 10 minutes | 12 seconds |
+| Confirmation | **~1 second** | ~60 minutes | ~12 minutes |
+| Cost per micro-tx | **~$0.0001** | $1–$50 | $0.50–$50 |
+| Streaming viable? | **Yes** | No | No |
+
+Kaspa's 10 BPS BlockDAG is the **only PoW chain** where per-second payment streaming is technically and economically viable.
 
 ---
 
 ## Table of Contents
-1. [Features & Implementation](#features--implementation)
-2. [How It Works](#-how-it-works)
-3. [AI Capabilities](#-ai-capabilities)
-4. [Architecture](#architecture)
-5. [Pages](#pages)
-6. [Tech Stack](#tech-stack)
-7. [Quick Start](#quick-start)
-8. [AI Usage Disclosure](#-ai-usage-disclosure)
+1. [Key Features](#key-features)
+2. [How It Works](#how-it-works)
+3. [AI Stream Creator](#ai-stream-creator)
+4. [Kaspa Integration Details](#kaspa-integration-details)
+5. [Architecture](#architecture)
+6. [Roadmap](#roadmap)
+7. [Tech Stack](#tech-stack)
+8. [Quick Start](#quick-start)
+9. [AI Usage Disclosure](#ai-usage-disclosure)
 
 ---
 
-## Features & Implementation
+## Key Features
 
-| Feature | How It Works | File/Service |
-|---------|--------------|--------------|
-| **Payment Streaming** | Splits total amount into micro-txs sent at configurable intervals | `lib/stream/engine.ts` |
-| **AI Stream Creator** | NLP parser extracts amount, address, duration from natural language | `lib/stream/nlp.ts` |
-| **On-Chain Verification** | Background verification of each tx against Kaspa REST API | `lib/kaspa/api.ts` |
-| **Payment Request Links** | Shareable URLs with pre-filled stream parameters | `app/pay/page.tsx` |
-| **Multi-Recipient Payroll** | Batch stream creation to multiple addresses | `app/payroll/page.tsx` |
-| **Analytics Dashboard** | Real-time throughput, verification rate, stream breakdown | `app/analytics/page.tsx` |
-| **CSV Export** | Download transaction history with on-chain status | `app/history/page.tsx` |
-| **Particle Visualization** | Canvas animation where speed/density = flow rate | `components/dashboard/ParticleFlow.tsx` |
-| **Tx Verification Badges** | Green/yellow/red indicators for on-chain confirmation | `components/dashboard/TxTicker.tsx` |
-| **Kasware Integration** | Direct connection to Kaspa's leading browser wallet | `lib/kaspa/wallet.ts` |
-| **Demo Mode** | Full experience without a wallet using simulated data | `contexts/WalletContext.tsx` |
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Per-Second Streaming** | Splits total amount into micro-txs sent at configurable intervals (10s–60s) |
+| **AI Stream Creator** | Type natural language like *"stream 50 KAS to kaspatest:qz0... over 10 minutes"* |
+| **Stream Templates** | One-click presets: Payroll, Subscription, Tip Jar |
+| **Live KAS/USD Price** | Real-time CoinGecko price feed with USD equivalents on every stream card |
+| **Network Status Bar** | Live BlockDAG tip count and BPS displayed in the dashboard header |
+| **Toast Notifications** | Visual feedback for every action (create, start, pause, cancel, copy) |
+| **On-Chain Verification** | Each micro-tx verified against Kaspa REST API with explorer links |
+| **Multi-Recipient Payroll** | Batch stream creation to multiple addresses simultaneously |
+| **Payment Request Links** | Shareable URLs with pre-filled stream parameters + QR codes |
+| **Analytics Dashboard** | Real-time throughput, verification rate, stream breakdown |
+| **Kasware Integration** | Direct connection to Kaspa's leading browser wallet |
+| **Demo Mode** | Full experience without a wallet — 500 KAS test balance, simulated txs |
 
 ---
 
 ## How It Works
 
 ```
-+-------------------------------------------------------------+
-|                        StreamKAS                            |
-+-------------------------------------------------------------+
-|  User types: "stream 50 KAS to kaspatest:qz0... over 10m"  |
-+-------------------------------------------------------------+
-            |
-            v
-+-------------------------------------------------------------+
-|  NLP Parser (lib/stream/nlp.ts)                            |
-|  Extracts: amount=50, recipient=kaspatest:qz0...,          |
-|            duration=10min, interval=15s                      |
-+-------------------------------------------------------------+
-            |
-            v
-+-------------------------------------------------------------+
-|  Stream Engine (lib/stream/engine.ts)                       |
-|  Creates 40 micro-txs of 1.25 KAS each                     |
-|  Sends one every 15 seconds via Kasware                     |
-+-------------------------------------------------------------+
-            |
-            v
-+-------------------------------------------------------------+
-|  On-Chain Verification (lib/kaspa/api.ts)                   |
-|  Each tx verified against Kaspa REST API                    |
-|  Status: accepted / pending / not_found                     |
-|  Links to Kaspa block explorer                              |
-+-------------------------------------------------------------+
+User: "stream 50 KAS to kaspatest:qz0... over 10 minutes"
+                        │
+                        ▼
+        ┌───────────────────────────────┐
+        │  NLP Parser (client-side)     │
+        │  Extracts: amount, address,   │
+        │  duration, interval           │
+        └───────────────┬───────────────┘
+                        │
+                        ▼
+        ┌───────────────────────────────┐
+        │  Stream Engine                │
+        │  Creates 40 micro-txs of     │
+        │  1.25 KAS, one every 15s     │
+        └───────────────┬───────────────┘
+                        │
+                        ▼
+        ┌───────────────────────────────┐
+        │  Kasware Wallet               │
+        │  Signs & broadcasts each tx   │
+        │  to Kaspa Testnet-10          │
+        └───────────────┬───────────────┘
+                        │
+                        ▼
+        ┌───────────────────────────────┐
+        │  On-Chain Verification        │
+        │  Each tx verified via REST    │
+        │  API → explorer link shown    │
+        └───────────────────────────────┘
 ```
 
-**Why Kaspa?** Kaspa's 10 BPS BlockDAG is the only PoW chain fast enough for per-second payment streaming. Bitcoin needs 10-minute blocks. Kaspa confirms in under a second.
+> **Technical Note:** StreamKAS uses client-side signing. The browser tab must remain open for the duration of the stream to sign and broadcast the micro-transactions.
 
 ---
 
-## AI Capabilities
+## NLP Stream Creator
 
-### Natural Language Stream Creator
+The NLP Stream Creator parses plain English into stream parameters using **client-side regex** — no API keys, no network calls, works offline.
 
-The AI Stream Creator parses plain English into stream parameters using client-side NLP:
-
-| Input Pattern | Example | Extracted |
-|---------------|---------|-----------|
-| Amount | "50 KAS", "0.5 kas", "100kas" | `amount: 50` |
-| Recipient | "to kaspatest:qz0s22..." | `recipient: kaspatest:qz0s22...` |
-| Duration | "over 30 minutes", "for 1 hour", "in 5 min" | `duration: 30 min` |
-| Interval | "every 10s", "every 30 seconds" | `interval: 10s` |
-
-**Supported command formats:**
+**Supported commands:**
 ```
 "stream 50 KAS to kaspatest:qz0s22... over 30 minutes"
 "send 10 KAS to kaspatest:abc123 for 5 min every 10s"
 "pay 100 KAS to kaspatest:qr... in 1 hour"
-"25 KAS to kaspatest:qz0... over 15 minutes every 30s"
 ```
 
-**Key design decision:** Parser runs entirely client-side using regex pattern matching - no API keys, no network calls, works offline. Real-time confidence indicators show extraction accuracy per field.
+**Templates** (one-click presets that auto-fill the NLP input):
+| Template | Preset Command |
+|----------|---------------|
+| 💰 Payroll | "stream 500 KAS to kaspatest:... over 8 hours" |
+| 🔄 Subscription | "stream 10 KAS to kaspatest:... over 30 days" |
+| ☕ Tip Jar | "stream 5 KAS to kaspatest:... over 5 minutes" |
 
-### Payment Request Presets
+---
 
-| Preset | Use Case | Default Duration |
-|--------|----------|-----------------|
-| Freelance | Hourly billing | 60 min |
-| Salary | Recurring payroll | 480 min |
-| Tip | Quick tips | 5 min |
-| Subscription | Recurring payments | 30 min |
+## Kaspa Integration Details
+
+## Kaspa Integration Details
+
+| Integration Point | How |
+|---|---|
+| **Wallet** | Kasware browser extension API (`window.kasware`) |
+| **Sending KAS** | `kasware.sendKaspa()` with sompi amounts |
+| **Balance** | Real-time balance polling + `balanceChanged` event listener |
+| **Verification** | `GET /transactions/{txId}` on `api-tn10.kaspa.org` |
+| **Network Info** | `GET /info/blockdag` for block count and BPS |
+| **Explorer** | Links to `explorer-tn10.kaspa.org` for every confirmed tx |
+| **Price Feed** | CoinGecko API (`/simple/price?ids=kaspa&vs_currencies=usd`) |
+| **Network** | Testnet-10 (`kaspatest:` address prefix) |
 
 ---
 
 ## Architecture
 
 ```
-+-------------------------------------------------------------+
-|                       StreamKAS                             |
-+-------------------------------------------------------------+
-|  UI Layer                                                   |
-|  [Dashboard] [Pay] [Payroll] [Analytics] [History]          |
-+-------------------------------------------------------------+
-|  AI Layer (Client-Side NLP)                                 |
-|  nlp.ts: Regex-based natural language parser                |
-|  No external APIs required                                  |
-+-------------------------------------------------------------+
-|  Stream Layer                                               |
-|  engine.ts: Micro-tx scheduler with background verification |
-|  - Configurable intervals (10s, 15s, 30s, 60s)             |
-|  - Pause/resume/cancel support                              |
-|  - On-chain verification with explorer links                |
-+-------------------------------------------------------------+
-|  Wallet Layer                                               |
-|  wallet.ts: Kasware API wrapper with response normalization |
-|  api.ts: Kaspa REST API for balance, UTXOs, verification   |
-+-------------------------------------------------------------+
-|  Storage: localStorage with stream persistence              |
-+-------------------------------------------------------------+
-```
-
-### Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx              # Landing page
-│   ├── dashboard/page.tsx    # Main control panel
-│   ├── pay/page.tsx          # Accept payment requests
-│   ├── pay/create/page.tsx   # Generate payment links
-│   ├── payroll/page.tsx      # Multi-recipient streams
-│   ├── analytics/page.tsx    # Real-time metrics
-│   └── history/page.tsx      # Stream history + CSV export
-├── components/
-│   ├── stream/
-│   │   ├── AIStreamCreator.tsx   # NLP command bar
-│   │   ├── StreamCreator.tsx     # Manual form
-│   │   └── StreamCard.tsx        # Stream display
-│   ├── dashboard/
-│   │   ├── ParticleFlow.tsx      # Canvas animation
-│   │   ├── TxTicker.tsx          # Transaction feed
-│   │   └── StatsCounter.tsx      # Animated stats
-│   └── layout/
-│       └── Header.tsx            # Navigation
-├── contexts/
-│   ├── WalletContext.tsx     # Wallet state + demo mode
-│   └── StreamContext.tsx     # Stream state management
-└── lib/
-    ├── stream/
-    │   ├── engine.ts         # Micro-tx scheduler
-    │   ├── nlp.ts            # NLP parser
-    │   └── types.ts          # TypeScript interfaces
-    ├── kaspa/
-    │   ├── wallet.ts         # Kasware wrapper
-    │   └── api.ts            # REST API + verification
-    └── utils.ts              # Helpers (formatting, validation)
+┌─────────────────────────────────────────────────┐
+│  UI Layer                                       │
+│  Landing │ Dashboard │ Pay │ Payroll │ Analytics │
+├─────────────────────────────────────────────────┤
+│  AI Layer (Client-Side NLP)                     │
+│  nlp.ts: Regex parser │ Templates               │
+├─────────────────────────────────────────────────┤
+│  Stream Layer                                   │
+│  engine.ts: Micro-tx scheduler + verification   │
+│  Pause/Resume/Cancel │ Background verification  │
+├─────────────────────────────────────────────────┤
+│  Blockchain Layer                               │
+│  wallet.ts: Kasware API │ api.ts: REST API      │
+│  price.ts: CoinGecko │ NetworkStatus            │
+├─────────────────────────────────────────────────┤
+│  State: React Context + localStorage            │
+│  WalletContext │ StreamContext │ ToastContext     │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Pages
+## Roadmap
 
-| Route | Description |
-|---|---|
-| `/` | Landing page with feature overview and how-it-works |
-| `/dashboard` | AI creator, manual creator, active streams, tx feed |
-| `/pay` | Accept incoming payment request links |
-| `/pay/create` | Generate shareable payment request URLs |
-| `/payroll` | Multi-recipient batch stream creation |
-| `/analytics` | Throughput, verification rate, charts |
-| `/history` | Stream history table with CSV export |
+**Phase 1: Hackathon (Done)**
+- [x] Stream engine & AI NLP creator
+- [x] Dashboard with live stats & charts
+- [x] Kasware wallet integration (Testnet-10)
+- [x] Payroll & subscription templates
+- [x] Real-time KAS/USD pricing
+
+**Phase 2: Mainnet Launch (Q2 2026)**
+- [ ] Mainnet deployment on Kaspa
+- [ ] Mobile-responsive optimization
+- [ ] User profiles & persistent history via database
+- [ ] Email/Telegram notifications for received streams
+
+**Phase 3: Ecosystem Expansion (Q3 2026)**
+- [ ] **StreamKAS SDK**: Widget for any website to accept streams
+- [ ] **KRC-20 Support**: Stream tokens, not just KAS
+- [ ] **Smart Contract Escrow**: (When Kaspa smart contracts live)
 
 ---
 
@@ -204,36 +197,51 @@ src/
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Styling | Vanilla CSS (Custom Design System) |
-| Blockchain | Kaspa (Testnet 10) |
+| Blockchain | Kaspa Testnet-10 |
 | Wallet | Kasware Wallet API |
-| API | Kaspa REST API (`api-tn10.kaspa.org`) |
-| NLP | Client-side regex parser |
+| Kaspa API | REST API (`api-tn10.kaspa.org`) |
+| Price Feed | CoinGecko API |
+| NLP | Client-side regex parser (zero dependencies) |
 | Animation | HTML5 Canvas + requestAnimationFrame |
+| State | React Context API + localStorage |
 
 ---
 
 ## Quick Start
-
 ```bash
-# 1. Clone the repository
+# Clone
 git clone https://github.com/himanshu-sugha/StreamKAS.git
 cd StreamKAS
 
-# 2. Install dependencies
+# Install
 npm install
 
-# 3. Run development server
+# Run dev server
 npm run dev
-
-# 4. Open http://localhost:3000
 ```
+**No wallet?** Click **"Demo Mode"** on the dashboard for the full experience with simulated data.
 
-**No wallet?** Click "Demo Mode" on the dashboard - full experience with simulated data and 500 KAS test balance.
+---
+
+## 🏗️ Judge's Walkthrough (Try This!)
+
+Want to see the magic in 30 seconds? Follow this script:
+
+1.  **Open Demo Mode**: Click "Demo Mode" on the dashboard if you don't have Kasware.
+2.  **Use the AI Creator**: In the "Create Flow" box, type:
+    > *"Stream 500 KAS to kaspatest:qz0s22... over 1 minute"*
+3.  **Watch the Magic**:
+    - Hit Enter → The stream card appears instantly.
+    - Click **"▶ Start"** → Watch the progress bar establish a real-time connection.
+    - See the **USD value** update live as KAS flows.
+4.  **Try a Template**:
+    - Click the **"💰 Payroll"** button above the input.
+    - Notice how it instantly pre-fills a complex payroll command.
+5.  **Check the Network**: Look at the top-right header to see the **Live BlockDAG Tip** updating in real-time.
 
 ---
 
 ## AI Usage Disclosure
-
 This project used **AI coding assistance** (Google Gemini) during development.
 
 **Areas where AI assisted:**
@@ -251,16 +259,14 @@ This project used **AI coding assistance** (Google Gemini) during development.
 
 ---
 
-## License
+## Team
 
-MIT License
+Built by **Himanshu Sugha**
+- **Role:** Full Stack Developer
+- **Contact:** himanshusugha@gmail.com
+- **Submitting for:** Kaspathon 2026 (Payments Track)
 
 ---
 
-## Author
-
-Built by Himanshu Sugha
-
-Contact: himanshusugha@gmail.com
-
-*Built for [Kaspathon 2026](https://kaspathon.com)*
+## License
+MIT License

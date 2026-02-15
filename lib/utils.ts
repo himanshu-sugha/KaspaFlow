@@ -4,6 +4,7 @@
 export const SOMPI_PER_KAS = 100_000_000;
 
 export function sompiToKas(sompi: number): number {
+    if (!sompi || isNaN(sompi)) return 0;
     return sompi / SOMPI_PER_KAS;
 }
 
@@ -12,7 +13,7 @@ export function kasToSompi(kas: number): number {
 }
 
 export function formatKas(sompi: number, decimals: number = 4): string {
-    const kas = sompiToKas(sompi);
+    const kas = sompiToKas(sompi || 0);
     return kas.toLocaleString(undefined, {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
@@ -20,7 +21,7 @@ export function formatKas(sompi: number, decimals: number = 4): string {
 }
 
 export function formatKasCompact(sompi: number): string {
-    const kas = sompiToKas(sompi);
+    const kas = sompiToKas(sompi || 0);
     if (kas >= 1_000_000) return `${(kas / 1_000_000).toFixed(2)}M`;
     if (kas >= 1_000) return `${(kas / 1_000).toFixed(2)}K`;
     return kas.toFixed(4);

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { WalletProvider } from "@/contexts/WalletContext";
 import { StreamProvider } from "@/contexts/StreamContext";
-import { ToastProvider } from "@/components/ui/Toast";
 import Header from "@/components/layout/Header";
 
 export const metadata: Metadata = {
@@ -16,6 +15,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from "@/contexts/ToastContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,16 +25,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <WalletProvider>
-          <StreamProvider>
-            <ToastProvider>
+        <ToastProvider>
+          <WalletProvider>
+            <StreamProvider>
               <Header />
               <main className="page">
                 {children}
               </main>
-            </ToastProvider>
-          </StreamProvider>
-        </WalletProvider>
+            </StreamProvider>
+          </WalletProvider>
+        </ToastProvider>
       </body>
     </html>
   );

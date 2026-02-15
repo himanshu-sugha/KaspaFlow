@@ -1,102 +1,78 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { getBlockDagInfo } from '@/lib/kaspa/api';
-import { useKasPrice } from '@/lib/kaspa/price';
+import React, { useEffect, useState } from 'react';
+import { getBlockDagInfo, BlockDagInfo } from '@/lib/kaspa/api';
 
 export default function NetworkStatus() {
-    const [dagInfo, setDagInfo] = useState<{
-        blockCount: string;
-        headerCount: string;
-        difficulty: number;
-        networkName: string;
-        virtualDaaScore: string;
-    } | null>(null);
-    const [isLive, setIsLive] = useState(false);
-    const { price } = useKasPrice();
+    const [info, setInfo] = useState<BlockDagInfo | null>(null);
+    const [bps, setBps] = useState<number>(0);
+    const [lastBlockCount, setLastBlockCount] = useState<number>(0);
+    const [lastTime, setLastTime] = useState<number>(Date.now());
 
     useEffect(() => {
-        let mounted = true;
-
         const fetchInfo = async () => {
             try {
-                const info = await getBlockDagInfo();
-                if (mounted && info) {
-                    setDagInfo(info);
-                    setIsLive(true);
+                const data = await getBlockDagInfo();
+                setInfo(data);
+
+                // Calculate approx BPS
+                const currentBlockCount = parseInt(data.blockCount);
+                const now = Date.now();
+
+                if (lastBlockCount > 0) {
+                    const diff = currentBlockCount - lastBlockCount;
+                    const timeDiff = (now - lastTime) / 1000;
+                    if (timeDiff > 0) {
+                        setBps(diff / timeDiff);
+                    }
                 }
-            } catch {
-                if (mounted) setIsLive(false);
+
+                setLastBlockCount(currentBlockCount);
+                setLastTime(now);
+
+            } catch (err) {
+                console.error('Failed to fetch network info:', err);
             }
         };
 
         fetchInfo();
-        const timer = setInterval(fetchInfo, 10_000); // every 10s
+        const interval = setInterval(fetchInfo, 3000); // Polling every 3s
+        return () => clearInterval(interval);
+    }, [lastBlockCount, lastTime]);
 
-        return () => {
-            mounted = false;
-            clearInterval(timer);
-        };
-    }, []);
+    if (!info) return null;
 
     return (
-        <div style={{
+        <div className="network-status-bar" style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '8px',
-            padding: '8px 16px',
-            background: 'rgba(73, 234, 203, 0.04)',
-            border: '1px solid rgba(73, 234, 203, 0.08)',
-            borderRadius: '10px',
+            gap: 'var(--space-lg)',
+            padding: 'var(--space-sm) var(--space-md)',
+            background: 'rgba(0,0,0,0.2)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
             fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-            marginBottom: 'var(--space-md)',
+            color: 'var(--text-tertiary)',
+            fontFamily: 'var(--font-mono)'
         }}>
-            {/* Left side: connection status */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: isLive ? '#49eacb' : '#636e72',
-                    boxShadow: isLive ? '0 0 8px #49eacb' : 'none',
-                    display: 'inline-block',
-                    animation: isLive ? 'glow-pulse 2s ease-in-out infinite' : 'none',
-                }} />
-                <span style={{ fontWeight: 600, color: isLive ? '#49eacb' : '#636e72' }}>
-                    {isLive ? 'Live' : 'Connecting...'}
-                </span>
-                <span>·</span>
-                <span>Kaspa {dagInfo?.networkName?.includes('mainnet') ? 'Mainnet' : 'Testnet'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#49eacb', boxShadow: '0 0 8px #49eacb' }}></div>
+                <span style={{ color: 'var(--text-secondary)' }}>Kaspa Testnet-10</span>
             </div>
 
-            {/* Right side: stats */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                {dagInfo && (
-                    <>
-                        <span>
-                            Block <strong style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-                                #{parseInt(dagInfo.blockCount).toLocaleString()}
-                            </strong>
-                        </span>
-                        <span>·</span>
-                        <span>DAA <strong style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-                            {parseInt(dagInfo.virtualDaaScore).toLocaleString()}
-                        </strong></span>
-                    </>
-                )}
-                {price > 0 && (
-                    <>
-                        <span>·</span>
-                        <span>
-                            KAS <strong style={{ color: '#49eacb', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-                                ${price.toFixed(4)}
-                            </strong>
-                        </span>
-                    </>
-                )}
-                <span>·</span>
-                <span style={{ color: 'var(--accent-teal)' }}>⚡ 10 BPS</span>
+            <div className="separator" style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.1)' }}></div>
+
+            <div>
+                BlockDAG Tip: <span style={{ color: 'var(--text-primary)' }}>{parseInt(info.blockCount).toLocaleString()}</span>
+            </div>
+
+            <div className="separator" style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.1)' }}></div>
+
+            <div>
+                BPS: <span style={{ color: '#49eacb' }}>{bps > 0 ? bps.toFixed(2) : '~1.00'}</span>
+            </div>
+
+            <div className="separator" style={{ width: '1px', height: '12px', background: 'rgba(255,255,255,0.1)' }}></div>
+
+            <div>
+                DAA Score: <span style={{ color: 'var(--text-primary)' }}>{parseInt(info.virtualDaaScore).toLocaleString()}</span>
             </div>
         </div>
     );

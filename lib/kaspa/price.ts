@@ -1,55 +1,56 @@
-// StreamKAS — Live KAS/USD Price Feed
+import { useState, useEffect } from 'react';
 
-let cachedPrice: { usd: number; timestamp: number } | null = null;
-const CACHE_TTL = 60_000; // 60 seconds
+interface PriceData {
+    kaspa: {
+        usd: number;
+    };
+}
+
+let priceCache: { price: number; timestamp: number } | null = null;
+const CACHE_DURATION = 60 * 1000; // 60 seconds
 
 export async function getKasPrice(): Promise<number> {
-    if (cachedPrice && Date.now() - cachedPrice.timestamp < CACHE_TTL) {
-        return cachedPrice.usd;
+    // Return cached price if valid
+    if (priceCache && Date.now() - priceCache.timestamp < CACHE_DURATION) {
+        return priceCache.price;
     }
 
     try {
-        const res = await fetch(
+        const response = await fetch(
             'https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd',
-            { cache: 'no-store' }
+            { headers: { 'Accept': 'application/json' } }
         );
-        if (!res.ok) throw new Error('CoinGecko API error');
-        const data = await res.json();
-        const usd = data?.kaspa?.usd ?? 0;
-        cachedPrice = { usd, timestamp: Date.now() };
-        return usd;
-    } catch {
-        // Return last cached value if available, otherwise 0
-        return cachedPrice?.usd ?? 0;
+
+        if (!response.ok) {
+            throw new Error('Price API error');
+        }
+
+        const data: PriceData = await response.json();
+        const price = data.kaspa.usd;
+
+        // Update cache
+        priceCache = { price, timestamp: Date.now() };
+        return price;
+    } catch (error) {
+        console.error('Failed to fetch KAS price:', error);
+        return priceCache?.price || 0.15; // Fallback to approx price if API fails
     }
 }
 
-// React hook for live price
-import { useState, useEffect } from 'react';
-
-export function useKasPrice(refreshInterval = 60_000) {
-    const [price, setPrice] = useState<number>(0);
-    const [loading, setLoading] = useState(true);
+export function useKasPrice() {
+    const [price, setPrice] = useState<number>(priceCache?.price || 0);
 
     useEffect(() => {
-        let mounted = true;
+        // Initial fetch
+        getKasPrice().then(setPrice);
 
-        const fetchPrice = async () => {
-            const p = await getKasPrice();
-            if (mounted) {
-                setPrice(p);
-                setLoading(false);
-            }
-        };
+        // Refresh every 60s
+        const interval = setInterval(() => {
+            getKasPrice().then(setPrice);
+        }, 60000);
 
-        fetchPrice();
-        const timer = setInterval(fetchPrice, refreshInterval);
+        return () => clearInterval(interval);
+    }, []);
 
-        return () => {
-            mounted = false;
-            clearInterval(timer);
-        };
-    }, [refreshInterval]);
-
-    return { price, loading };
+    return price;
 }
